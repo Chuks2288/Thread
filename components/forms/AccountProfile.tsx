@@ -17,6 +17,8 @@ import {
 import { Input } from "@/components/ui/input"
 import * as z from "zod"
 import Image from 'next/image';
+import { ChangeEvent, useState } from 'react';
+import { Textarea } from '../ui/textarea';
 
 interface Props {
     user: {
@@ -32,21 +34,46 @@ interface Props {
 
 const AccountProfile = ({ user, btnTitle }: Props) => {
 
+    const [files, setFiles] = useState("");
+
     const form = useForm({
         resolver: zodResolver(UserValidation),
         defaultValues: {
-            profile_photo: "",
-            name: "",
-            username: "",
-            bio: "",
+            profile_photo: user?.image || "",
+            name: user?.name || "",
+            username: user?.username || "",
+            bio: user?.bio || "",
         }
     });
 
     function onSubmit(values: z.infer<typeof UserValidation>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
-        console.log(values)
+        const blob = values.profile_photo;
+
+        const hasImageChanged = isBase64Image(blob);
     }
+
+    const handleImage = (e: ChangeEvent<HTMLInputElement>, fieldChange: (value: string) => void) => {
+        e.preventDefault();
+
+        const fileReader = new FileReader();
+
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+
+            setFiles(Array.from(e.target.files));
+
+            if (!file.type.includes("image")) return;
+
+            fileReader.onload = async (event) => {
+                const imageDataUrl = event.target?.result?.toString() || "";
+
+                fieldChange(imageDataUrl);
+            }
+
+            fileReader.readAsDataURL(file);
+        }
+    }
+
 
     return (
         <Form {...form}>
@@ -85,15 +112,71 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                                     accept="image/*"
                                     placeholder='Upload a photo'
                                     className="account-form_image-input"
+                                    onChange={(e) => handleImage(e, field.onChange)}
                                 />
                             </FormControl>
-                            <FormDescription>
-                                This is your public display name.
-                            </FormDescription>
-                            <FormMessage />
+
                         </FormItem>
                     )}
                 />
+
+                <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                        <FormItem className="flex gap-3 w-full flex-col">
+                            <FormLabel className='text-base-semibold text-light-2'>
+                                Username
+                            </FormLabel>
+                            <FormControl className='flex-1 text-base-semibold text-gray-200'>
+                                <Input
+                                    type="text"
+                                    className="account-form_input no-focus"
+                                    {...field}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem className="flex gap-3 w-full flex-col">
+                            <FormLabel className='text-base-semibold text-light-2'>
+                                Name
+                            </FormLabel>
+                            <FormControl className='flex-1 text-base-semibold text-gray-200'>
+                                <Input
+                                    type="text"
+                                    className="account-form_input no-focus"
+                                    {...field}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                        <FormItem className="flex gap-3 w-full flex-col">
+                            <FormLabel className='text-base-semibold text-light-2'>
+                                Bio
+                            </FormLabel>
+                            <FormControl className='flex-1 text-base-semibold text-gray-200'>
+                                <Textarea
+                                    rows={10}
+                                    className="account-form_input no-focus"
+                                    {...field}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <Button type="submit">Submit</Button>
             </form>
         </Form>
